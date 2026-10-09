@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>迎え場所・出勤一覧生成ならココ</title>
+<style>
+
+body{font-family:Arial,"Noto Sans JP",sans-serif;background:#f5f5f5;margin:0;padding:20px}
+.box{max-width:800px;margin:auto;background:white;padding:20px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+h1{font-size:24px;text-align:center;margin-top:5px}h3{margin-top:25px}
+textarea{width:100%;height:220px;padding:10px;box-sizing:border-box;font-size:15px;border:1px solid #ccc;border-radius:6px;resize:vertical}
+button{padding:12px 20px;margin:10px 5px 10px 0;border:0;border-radius:7px;background:#1976d2;color:white;font-weight:bold;cursor:pointer;font-size:14px}
+button:hover{opacity:.85}button:disabled{opacity:.55;cursor:not-allowed}
+button.sub{background:#607d8b;padding:7px 10px;font-size:12px;margin:0}
+button.save{background:#188038;padding:8px 14px;margin:4px 4px 0 0}
+button.cancel{background:#777;padding:8px 14px;margin:4px 0 0}
+button.add{background:#607d8b;padding:8px 12px;margin:4px 0 0}
+.row{display:grid;grid-template-columns:1fr 60px 70px minmax(180px,1fr);gap:8px;padding:9px 0;border-bottom:1px solid #ddd;align-items:center}
+.pickup-area{min-width:0}
+.pickup-display{display:flex;gap:6px;align-items:center}
+.pickup-display select{flex:1;min-width:0}
+.edit-panel{margin-top:6px;padding:10px;background:#f8f8f8;border:1px solid #ddd;border-radius:7px}
+.edit-line{display:flex;align-items:center;gap:7px;margin:5px 0}
+.edit-line label{width:65px;font-size:12px;color:#666;flex-shrink:0}
+input,select{width:100%;padding:9px;box-sizing:border-box;border:1px solid #ccc;border-radius:5px;font-size:14px;background:white}
+input.new-pickup{background:#fff59d;border:2px solid #f0c000}
+select.has-two{background:#eaf4ff;border:2px solid #64a7e8}
+input.edit-input:focus{outline:2px solid #90caf9}
+.output{white-space:pre-wrap;background:#f7f7f7;padding:15px;border-radius:8px;line-height:1.8;font-size:16px}
+.note{color:#666;font-size:13px}.status{color:#555;font-size:13px;margin:8px 0;white-space:pre-wrap}
+.status.ok{color:#188038}.status.error{color:#d93025}.count{color:#555;font-size:14px;margin-bottom:8px}
+@media(max-width:600px){
+ body{padding:10px}.box{padding:15px}h1{font-size:20px}
+ .row{grid-template-columns:1fr 55px 60px}.row .pickup-area{grid-column:1/-1}
+}
+
+
+*{box-sizing:border-box}
+body{margin:0;background:#f5f6f8;color:#222;font-family:Arial,"Noto Sans JP",sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:20px}
+header{background:#fff;border-radius:14px;padding:18px 20px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.06);display:flex;justify-content:space-between;align-items:center;gap:12px}
+h1{font-size:24px;margin:0}
+h2{font-size:18px;margin:0 0 12px}
+.card{background:#fff;border-radius:14px;padding:20px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+textarea{width:100%;height:260px;border:1px solid #ccc;border-radius:10px;padding:12px;font-size:15px;resize:vertical}
+button{border:0;border-radius:9px;padding:11px 16px;font-size:14px;font-weight:700;cursor:pointer}
+.primary{background:#1976d2;color:#fff}
+.secondary{background:#e9eef5;color:#222}
+.success{background:#2e7d32;color:#fff}
+.danger{background:#d32f2f;color:#fff}
+.small{padding:7px 10px;font-size:12px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.step{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:#666;margin-bottom:10px}
+.step b{background:#1976d2;color:#fff;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center}
+.notice{padding:12px;border-radius:9px;background:#fff8e1;border:1px solid #ffe082;margin-top:12px}
+.error{padding:12px;border-radius:9px;background:#ffebee;border:1px solid #ef9a9a;margin-top:12px}
+.ok{padding:10px;border-radius:9px;background:#e8f5e9;color:#256b2a;margin-top:10px}
+.hidden{display:none!important}
+.result-section{margin-top:20px}
+.result-title{font-size:19px;font-weight:700;border-bottom:3px solid #222;padding-bottom:7px;margin:20px 0 8px}
+.result-row{display:flex;gap:16px;padding:9px 4px;border-bottom:1px solid #eee;font-size:17px}
+.result-time{width:75px;font-weight:700}
+.empty{color:#999;padding:10px 4px}
+.setting-list{display:flex;flex-direction:column;gap:8px;touch-action:none}
+.person-row{display:grid;grid-template-columns:34px minmax(160px,1fr) 120px 64px;align-items:center;gap:8px;border:1px solid #e0e0e0;border-radius:9px;padding:9px 10px;box-sizing:border-box;overflow:visible}
+.person-name{display:block;min-width:160px;width:auto;overflow:visible;visibility:visible;color:#222;font-weight:600;writing-mode:horizontal-tb;text-orientation:mixed;white-space:nowrap;line-height:1.5}
+.person-row{cursor:grab;user-select:none;touch-action:none}
+.person-row.dragging{opacity:.45}
+.person-row.drag-over{border:2px dashed #1976d2;background:#eef6ff}
+.drag-handle{font-size:20px;color:#777;cursor:grab;padding:2px 5px}
+
+select{padding:7px;border:1px solid #ccc;border-radius:7px;background:#fff}
+.add-row{display:flex;gap:8px;margin-top:10px}
+.add-row input{flex:1;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:14px}
+.work-top-actions{display:flex;justify-content:flex-end;margin-bottom:10px}
+.settings-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.warning-name{display:inline-block;background:#fff;border:1px solid #ddd;border-radius:6px;padding:4px 8px;margin:4px}
+.muted{color:#777;font-size:13px}
+.copy-area{display:flex;justify-content:center;margin-top:20px}
+.copy-area button{font-size:16px;padding:13px 25px}
+@media(max-width:600px){
+ .wrap{padding:10px}
+ header{padding:14px}
+ h1{font-size:20px}
+ .card{padding:15px}
+ .result-row{font-size:16px}
+ .result-time{width:68px}
+}
+
+
+.app-header{max-width:1100px;margin:0 auto;padding:18px 20px 0}
+.app-title{background:#fff;border-radius:14px 14px 0 0;padding:14px 20px 8px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.app-title h1{margin:0;font-size:23px;text-align:left}
+.tabs{display:flex;gap:4px;background:#fff;padding:0 10px 10px;border-radius:0 0 14px 14px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.tab-btn{flex:1;border:0;border-radius:9px;padding:13px 10px;background:#e9eef5;color:#333;font-weight:700;cursor:pointer;font-size:15px}
+.tab-btn.active{background:#1976d2;color:#fff}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+.unified-main{max-width:1100px;margin:0 auto;padding:16px 20px 30px}
+.pickup-box{max-width:900px}
+.work-wrap{max-width:900px;margin:0 auto}
+@media(max-width:600px){
+ .app-header{padding:10px 10px 0}
+ .app-title h1{font-size:19px}
+ .tabs{padding:0 6px 7px}
+ .tab-btn{font-size:13px;padding:11px 5px}
+ .unified-main{padding:10px}
+}
+
+
+.memo-wrap{max-width:900px;margin:0 auto;padding:10px 0}
+.memo-note{color:#666;font-size:13px}
+.memo-textarea{width:100%;min-height:520px;box-sizing:border-box;padding:14px;border:1px solid #ccc;border-radius:8px;font-size:16px;line-height:1.7;resize:vertical;background:#fff}
+</style>
+</head>
+<body>
+<div class="app-header">
+  <div class="app-title"><h1>迎え場所・出勤一覧生成ならココ</h1></div>
+  <div class="tabs">
+    <button id="tabWork" class="tab-btn" onclick="showTab('work')">📋 出勤一覧生成</button>
+    <button id="tabPickup" class="tab-btn" onclick="showTab('pickup')">🚗 迎え場所生成</button>
+    <button id="tabMemo" class="tab-btn" onclick="showTab('memo')">📝 メモ帳</button>
+  </div>
+</div>
+<div class="unified-main">
+<section id="pickupTab" class="tab-panel active">
+
+<div class="box pickup-box">
+
+
+<h3>① 出勤データを貼り付け</h3>
+<textarea id="input" placeholder="既存システムからコピーして貼り付け"></textarea><br>
+<button id="loadButton" onclick="loadData()">読み込む</button>
+
+<p class="note">
+※(手)の女の子は自動的に除外されます。<br>
+※迎え先は全パソコンで共有されます。<br>
+※(熟)・(美)・(ポ)・(リ)は所属込みで別人として管理します。<br>
+※迎え先が2つ登録されている場合は▼から選択できます。<br>※迎え先が「寮」の場合は「加古川駅」と同じく、一覧では迎え先を表示しません。<br>
+※編集するときだけ2つの迎え先が縦に表示されます。
+</p>
+
+<div id="status" class="status"></div>
+<div id="edit"></div>
+
+<div id="result" style="display:none">
+<h3>③ 完成した一覧</h3>
+<div id="outputCount"></div>
+<div class="output" id="output"></div>
+<button onclick="copyText()">コピー</button>
+</div>
+</div>
+
+
+</section>
+<section id="workTab" class="tab-panel">
+<div class="work-wrap">
+
+<section id="mainScreen">
+  <div class="card">
+    <div class="work-top-actions">
+      <button class="secondary" onclick="openSettings()">⚙️ 設定</button>
+    </div>
+    <div class="step"><b>1</b> Excelデータを貼り付け</div>
+    <textarea id="inputData" placeholder="例：
+森本　→9.5
+丸山　→12
+林　→17
+大久保→9.5
+升谷　→18
+鷲野　→9.5"></textarea>
+    <div class="actions">
+      <button class="primary" onclick="generateList()">② 一覧を作成</button>
+      <button class="secondary" onclick="clearInput()">クリア</button>
+    </div>
+    <div id="message"></div>
+  </div>
+
+  <div id="resultCard" class="card hidden">
+    <div class="step"><b>3</b> 完成</div>
+    <div id="workResult"></div>
+    <div class="copy-area">
+      <button class="success" onclick="pasteResultToMemo()">📝 メモ帳に貼り付け</button>
+      <button class="secondary" onclick="copyWorkResultForSystem()">📋 システム反映用にコピー</button>
+    </div>
+    <div id="copyMessage"></div>
+  </div>
+</section>
+
+<section id="settingsScreen" class="hidden">
+  <div class="card">
+    <div class="settings-head">
+      <h2>⚙️ スタッフ・ドライバー設定</h2>
+      <div class="actions"><button class="secondary small" onclick="refreshSharedSettings()">🔄 共有設定を再読み込み</button><button class="secondary" onclick="closeSettings()">← 戻る</button></div>
+    </div>
+    <p class="muted">ここで登録した分類を使って、貼り付けたExcelデータを自動で振り分けます。</p><div class="notice">💡 同じ出勤時間の人は、ここで設定した上からの順番になります。<br>名前をドラッグ＆ドロップして好きな順番に変更できます。</div><p class="muted"></p>
+
+    <h2 style="margin-top:24px">👩 スタッフ</h2>
+    <div id="staffList" class="setting-list"></div>
+    <div class="add-row">
+      <input id="staffInput" placeholder="スタッフ名を入力">
+      <button class="primary" onclick="addPerson('staff')">＋ 追加</button>
+    </div>
+
+    <h2 style="margin-top:28px">🚗 ドライバー</h2>
+    <div id="driverList" class="setting-list"></div>
+    <div class="add-row">
+      <input id="driverInput" placeholder="ドライバー名を入力">
+      <button class="primary" onclick="addPerson('driver')">＋ 追加</button>
+    </div>
+
+    <div id="settingMessage"></div>
+  </div>
+</section>
+</div>
+</section>
+<section id="memoTab" class="tab-panel">
+  <div class="memo-wrap">
+    <div class="card">
+      <div class="step"><b>📝</b> メモ帳</div>
+      <p class="memo-note">このメモはこのパソコンだけに保存されます。ほかのパソコンとは共有されません。</p>
+      <textarea id="sharedMemo" class="memo-textarea" placeholder="自由にメモを入力してください"></textarea>
+      <div class="actions memo-actions-bottom">
+        <button class="secondary" onclick="copySharedMemo()">📋 コピー</button>
+        <button class="primary" onclick="openSystemForAttendance()">🚀 CAMELに貼付け</button>
+        <button type="button" class="danger" onclick="clearSharedMemo()">🗑️ クリア</button>
+      </div>
+      <div class="notice">💡 システムを開いた後、システム側に表示される「🤖 出勤一覧を反映」ボタンを押すと、メモ帳の出勤一覧を貼り付けて、該当する出勤者を自動チェックできます。</div>
+      <div id="memoMessage"></div>
+    </div>
+  </div>
+</section>
+</div>
+<script>
+async function showTab(name){
+  document.getElementById("pickupTab").classList.toggle("active",name==="pickup");
+  document.getElementById("workTab").classList.toggle("active",name==="work");
+  document.getElementById("memoTab").classList.toggle("active",name==="memo");
+  document.getElementById("tabPickup").classList.toggle("active",name==="pickup");
+  document.getElementById("tabWork").classList.toggle("active",name==="work");
+  document.getElementById("tabMemo").classList.toggle("active",name==="memo");
+  localStorage.setItem("unifiedActiveTab",name);
+  if(name==="memo") loadLocalMemo(false);
+
+  // 「📋 出勤一覧生成」を開いた瞬間に、共有しているスタッフ／ドライバー設定を取得
+  if(name==="work") await syncSettingsFromServer();
+}
+
+
+document.addEventListener("input",function(e){
+  if(e.target && e.target.id==="sharedMemo") saveLocalMemo();
+});
+
+
+const SUPABASE_URL="https://meaqfxgqtjnffzfeksqe.supabase.co";
+const SUPABASE_KEY="sb_publishable_LzVv_ALRX0fxkZmq5XLKtw_MtkBqDRj";
+const PICKUP_API=SUPABASE_URL+"/rest/v1/pickup_memory";
+const LOCAL_MEMO_KEY="unifiedLocalMemo_v1";
+
+function showMemoMessage(text,ok=true){
+  const el=document.getElementById("memoMessage");
+  if(!el)return;
+  el.innerHTML='<div class="'+(ok?"ok":"error")+'">'+escapeHtml(text)+'</div>';
+  setTimeout(()=>{if(el)el.innerHTML=""},2200);
+}
+
+function loadLocalMemo(showMessage=true){
+  const area=document.getElementById("sharedMemo");
+  if(!area)return;
+  area.value=localStorage.getItem(LOCAL_MEMO_KEY)||"";
+  if(showMessage) showMemoMessage("💾 このPCのメモを読み込みました");
+}
+
+function saveLocalMemo(){
+  const area=document.getElementById("sharedMemo");
+  if(!area)return;
+  localStorage.setItem(LOCAL_MEMO_KEY,area.value);
+}
+
+async function copySharedMemo(){
+  const area=document.getElementById("sharedMemo");
+  if(!area || !area.value){showMemoMessage("コピーするメモがありません",false);return;}
+  try{
+    await navigator.clipboard.writeText(area.value);
+  }catch(e){
+    area.select();
+    document.execCommand("copy");
+  }
+  showMemoMessage("📋 コピーしました");
+}
+
+function clearSharedMemo(){
+  const area=document.getElementById("sharedMemo");
+  if(!area)return;
+
+  // 確認なしで即クリア。画面と保存データを同時に削除する。
+  area.value="";
+  area.textContent="";
+  localStorage.removeItem(LOCAL_MEMO_KEY);
+
+  // 念のため、このPCに残っている可能性のある旧キーも削除
+  localStorage.removeItem("sharedMemo");
+  localStorage.removeItem("sharedMemoText");
+  localStorage.removeItem("unifiedSharedMemo_v1");
+
+  area.focus();
+  showMemoMessage("🗑️ メモをクリアしました");
+}
+
+
+let data=[];
+const saveTimers={};
+
+function setStatus(message,type=""){
+ const el=document.getElementById("status");
+ el.textContent=message;
+ el.className="status "+type;
+}
+
+function headers(extra={}){
+ return {
+  apikey:SUPABASE_KEY,
+  Authorization:"Bearer "+SUPABASE_KEY,
+  "Content-Type":"application/json",
+  ...extra
+ };
+}
+
+/*
+  SQLは name / pickup / updated_at の3列だけ。
+  2つ目の迎え先は pickup の中に特殊な区切り文字で保存します。
+  pickup2 列は使用しません。
+*/
+const PICKUP_SEPARATOR="|||";
+
+function encodePickups(pickups){
+ return pickups
+  .map(v=>String(v||"").trim())
+  .filter(Boolean)
+  .filter((v,i,a)=>a.indexOf(v)===i)
+  .slice(0,2)
+  .join(" "+PICKUP_SEPARATOR+" ");
+}
+
+function decodePickups(value){
+ return String(value||"")
+  .split(PICKUP_SEPARATOR)
+  .map(v=>v.trim())
+  .filter(Boolean)
+  .filter((v,i,a)=>a.indexOf(v)===i)
+  .slice(0,2);
+}
+
+/* 所属込みで別人として保存 */
+function personKey(p){
+ return p.name.trim()+"("+p.type.trim()+")";
+}
+
+async function getPickupMemory(){
+ const r=await fetch(PICKUP_API+"?select=name,pickup",{headers:headers()});
+
+ if(!r.ok){
+  throw new Error("HTTP "+r.status+"\n"+await r.text());
+ }
+
+ const rows=await r.json();
+ const memory={};
+
+ rows.forEach(x=>{
+  memory[x.name]=decodePickups(x.pickup);
+ });
+
+ return memory;
+}
+
+async function savePickup(name,pickups){
+ const r=await fetch(PICKUP_API+"?on_conflict=name",{
+  method:"POST",
+  headers:headers({
+   Prefer:"resolution=merge-duplicates,return=minimal"
+  }),
+  body:JSON.stringify({
+   name:name,
+   pickup:encodePickups(pickups),
+   updated_at:new Date().toISOString()
+  })
+ });
+
+ if(!r.ok){
+  throw new Error("HTTP "+r.status+"\n"+await r.text());
+ }
+}
+
+function scheduleSave(index){
+ clearTimeout(saveTimers[index]);
+
+ saveTimers[index]=setTimeout(async()=>{
+  const p=data[index];
+  if(!p)return;
+
+  try{
+   await savePickup(personKey(p),p.pickups);
+   setStatus("迎え先を共有サーバーに保存しました。","ok");
+  }catch(e){
+   console.error(e);
+   setStatus(
+    "迎え先を共有できませんでした。\n"+e.message,
+    "error"
+   );
+  }
+ },500);
+}
+
+async function loadData(){
+ const text=document.getElementById("input").value;
+
+ if(!text.trim()){
+  alert("出勤データを貼り付けてください。");
+  return;
+ }
+
+ const b=document.getElementById("loadButton");
+ b.disabled=true;
+
+ setStatus("共有している迎え先を読み込んでいます...");
+
+ try{
+  const memory=await getPickupMemory();
+
+  data=[];
+
+  text.split(/\r?\n/).forEach(line=>{
+   line=line.trim();
+   if(!line)return;
+
+   const m=line.match(/^(.+?)\(([^)]+)\)\s*(\d{1,2}:\d{2})/);
+   if(!m)return;
+
+   const name=m[1].trim();
+   const type=m[2].trim();
+   const time=m[3];
+
+   if(type==="手")return;
+
+   const key=name+"("+type+")";
+   const pickups=memory[key] ? [...memory[key]] : [];
+
+   data.push({
+    name,
+    type,
+    time,
+    pickups,
+    // DBに保存されている先頭＝最後に使った迎え先を初期選択
+    pickup:pickups.length ? pickups[0] : "",
+    editing:false
+   });
+  });
+
+  data.sort((a,b)=>timeToMinutes(a.time)-timeToMinutes(b.time));
+
+  render();
+
+  setStatus("共有している迎え先を読み込みました。","ok");
+
+  setTimeout(()=>{
+   const edit=document.getElementById("edit");
+   if(edit){
+    edit.scrollIntoView({
+     behavior:"smooth",
+     block:"start"
+    });
+   }
+  },150);
+
+ }catch(e){
+  console.error(e);
+
+  setStatus(
+   "共有データの読み込みに失敗しました。\n\n"+
+   "エラー内容: "+e.message+"\n\n"+
+   "Supabaseの設定を確認してください。",
+   "error"
+  );
+
+  alert(
+   "共有データを読み込めませんでした。\n\n"+
+   e.message
+  );
+
+ }finally{
+  b.disabled=false;
+ }
+}
+
+function timeToMinutes(t){
+ const p=t.split(":");
+ return Number(p[0])*60+Number(p[1]);
+}
+
+function escapeHtml(v){
+ return String(v)
+  .replace(/&/g,"&amp;")
+  .replace(/</g,"&lt;")
+  .replace(/>/g,"&gt;")
+  .replace(/"/g,"&quot;")
+  .replace(/'/g,"&#039;");
+}
+
+function pickupDisplayHtml(p,i){
+ if(p.pickups.length>=2){
+  return `
+   <div class="pickup-display">
+    <select class="has-two" onchange="selectPickup(${i},this.value)">
+     ${p.pickups.map(x=>`
+      <option value="${escapeHtml(x)}" ${x===p.pickup?"selected":""}>
+       ${escapeHtml(x)}
+      </option>
+     `).join("")}
+    </select>
+    <button class="sub" onclick="openEditor(${i})">編集</button>
+   </div>
+  `;
+ }
+
+ return `
+  <div class="pickup-display">
+   <input
+    type="text"
+    class="${(p.pickup||"").trim()==="" ? "new-pickup" : ""}"
+    placeholder="迎え先"
+    value="${escapeHtml(p.pickup)}"
+    oninput="updateSinglePickup(${i},this.value)"
+   >
+   <button class="sub" onclick="openEditor(${i})">編集</button>
+  </div>
+ `;
+}
+
+function editorHtml(p,i){
+ const first=p.pickups[0]||"";
+ const second=p.pickups[1]||"";
+
+ return `
+  <div class="edit-panel">
+   <div class="edit-line">
+    <label>迎え先①</label>
+    <input
+     id="edit1-${i}"
+     class="edit-input"
+     type="text"
+     value="${escapeHtml(first)}"
+     placeholder="迎え先を入力"
+    >
+   </div>
+
+   <div class="edit-line">
+    <label>迎え先②</label>
+    <input
+     id="edit2-${i}"
+     class="edit-input"
+     type="text"
+     value="${escapeHtml(second)}"
+     placeholder="2つ目（必要な場合）"
+    >
+   </div>
+
+   <button class="save" onclick="saveEditor(${i})">保存</button>
+   <button class="cancel" onclick="closeEditor(${i})">キャンセル</button>
+  </div>
+ `;
+}
+
+function render(){
+ let html="<h3>② 迎え先を入力</h3>";
+ html+=`<p>対象：${data.length}名</p>`;
+
+ data.forEach((p,i)=>{
+  html+=`
+   <div class="row">
+    <strong>${escapeHtml(p.name)}</strong>
+    <span>${escapeHtml(p.type)}</span>
+    <strong>${escapeHtml(p.time)}</strong>
+
+    <div class="pickup-area">
+     ${pickupDisplayHtml(p,i)}
+     ${p.editing ? editorHtml(p,i) : ""}
+    </div>
+   </div>
+  `;
+ });
+
+ html+=`<button onclick="makeResult()">一覧を作成</button>`;
+
+ document.getElementById("edit").innerHTML=html;
+}
+
+function updateSinglePickup(i,v){
+ const p=data[i];
+ p.pickup=v;
+ p.pickups=v.trim() ? [v] : [];
+ const inputs=document.querySelectorAll("#edit input");
+ const input=inputs[i];
+ if(input) input.classList.toggle("new-pickup",v.trim()==="");
+ scheduleSave(i);
+}
+
+async function selectPickup(i,v){
+ const p=data[i];
+ if(!p)return;
+
+ // 選択した迎え先を「最近使用した迎え先」として必ず先頭にする
+ const other=p.pickups.filter(x=>x!==v);
+ p.pickups=[v,...other].slice(0,2);
+ p.pickup=v;
+
+ // 画面上もすぐに選択状態を確定
+ const select=document.querySelectorAll("#edit select")[0];
+
+ // すぐ保存する（500ms待ちではなく、選択操作を確実に保存）
+ clearTimeout(saveTimers[i]);
+
+ try{
+  await savePickup(personKey(p),p.pickups);
+  setStatus("最近使用した迎え先を保存しました。次回もこの迎え先が優先されます。","ok");
+ }catch(e){
+  console.error(e);
+  setStatus("最近使用した迎え先を保存できませんでした。\n"+e.message,"error");
+ }
+}
+
+function openEditor(i){
+ data[i].editing=true;
+ render();
+
+ setTimeout(()=>{
+  const el=document.getElementById("edit1-"+i);
+  if(el){
+   el.focus();
+  }
+ },50);
+}
+
+function closeEditor(i){
+ data[i].editing=false;
+ render();
+}
+
+function saveEditor(i){
+ const p=data[i];
+
+ const first=document.getElementById("edit1-"+i).value.trim();
+ const second=document.getElementById("edit2-"+i).value.trim();
+
+ if(!first && second){
+  alert("2つ目だけでは登録できません。\n先に1つ目の迎え先を入力してください。");
+  return;
+ }
+
+ if(first && second && first===second){
+  alert("1つ目と2つ目が同じです。\n別々の迎え先を入力してください。");
+  return;
+ }
+
+ p.pickups=[];
+
+ if(first)p.pickups.push(first);
+ if(second)p.pickups.push(second);
+
+ /*
+   現在選択していた迎え先が残っていれば維持。
+   消えていた場合は1つ目を選択。
+ */
+ if(p.pickup && p.pickups.includes(p.pickup)){
+  // 現在選択中の迎え先を先頭＝最近使用した迎え先として保存
+  const other=p.pickups.filter(x=>x!==p.pickup);
+  p.pickups=[p.pickup,...other].slice(0,2);
+ }else{
+  p.pickup=p.pickups[0]||"";
+ }
+
+ p.editing=false;
+
+ scheduleSave(i);
+ render();
+}
+
+function makeResult(){
+ // 迎え先が未入力の女の子をチェック
+ const missing=data.filter(p=>{
+  const pickup=(p.pickup||"").trim();
+  return pickup==="";
+ });
+
+ if(missing.length>0){
+  const names=missing.map(p=>`・${p.name}（${p.type}）`).join("\n");
+
+  const ok=confirm(
+   `⚠️ 迎え先が未入力の女の子が${missing.length}名います。\n\n`+
+   names+
+   `\n\nこのまま一覧を作成しますか？\n`+
+   `「キャンセル」を押すと入力画面に戻ります。`
+  );
+
+  if(!ok){
+   const first=missing[0];
+   const index=data.indexOf(first);
+
+   setTimeout(()=>{
+    const el=document.querySelectorAll("#edit .row")[index];
+    if(el){
+     el.scrollIntoView({
+      behavior:"smooth",
+      block:"center"
+     });
+    }
+   },50);
+
+   return;
+  }
+ }
+
+ let text="";
+ let count=0;
+
+ data.forEach(p=>{
+  const pickup=(p.pickup||"").trim();
+
+  if(pickup==="車" || pickup==="寮")return;
+
+  let line=`${p.name}(${p.type})${p.time}`;
+
+  if(pickup && pickup!=="加古川駅" && pickup!=="寮"){
+   line+=`『${pickup}』`;
+  }
+
+  text+=line+"\n";
+  count++;
+ });
+
+ document.getElementById("output").textContent=text.trim();
+
+ document.getElementById("outputCount").innerHTML=
+  `<p class="count">一覧：${count}名</p>`;
+
+ document.getElementById("result").style.display="block";
+
+ setTimeout(()=>{
+  const result=document.getElementById("result");
+
+  if(result){
+   result.scrollIntoView({
+    behavior:"smooth",
+    block:"start"
+   });
+  }
+ },150);
+}
+function copyText(){
+ const text=document.getElementById("output").textContent;
+
+ if(!text){
+  alert("コピーする一覧がありません。");
+  return;
+ }
+
+ navigator.clipboard.writeText(text)
+ .then(()=>{
+  alert("コピーしました。");
+ })
+ .catch(()=>{
+  const t=document.createElement("textarea");
+  t.value=text;
+  document.body.appendChild(t);
+  t.select();
+  document.execCommand("copy");
+  t.remove();
+  alert("コピーしました。");
+ });
+}
+
+
+
+const STORAGE_KEY = "workListPersonTypes_v1";
+const WORK_SETTINGS_DB_NAME = "__WORK_LIST_SETTINGS__";
+let settingsSyncing = false;
+
+let settings = loadSettings();
+let lastResultText = "";
+
+function loadSettings(){
+  try{
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if(saved){
+      const obj = JSON.parse(saved);
+      return {
+        staff: Array.isArray(obj.staff) ? obj.staff : [],
+        driver: Array.isArray(obj.driver) ? obj.driver : []
+      };
+    }
+  }catch(e){}
+  return {staff:[],driver:[]};
+}
+
+function saveSettings(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  saveSettingsToServer(settings);
+}
+
+function showSettingMessage(text){
+  const el=document.getElementById("settingMessage");
+  el.innerHTML='<div class="ok">'+escapeHtml(text)+'</div>';
+  setTimeout(()=>el.innerHTML="",1800);
+}
+
+async function getSharedSettings(){
+  const url=SUPABASE_URL+"/rest/v1/pickup_memory?select=name,pickup&name=eq."+encodeURIComponent(WORK_SETTINGS_DB_NAME);
+  const r=await fetch(url,{headers:headers()});
+  if(!r.ok) throw new Error("HTTP "+r.status+"\\n"+await r.text());
+  const rows=await r.json();
+  if(!rows.length || !rows[0].pickup) return null;
+  try{
+    const obj=JSON.parse(rows[0].pickup);
+    return {
+      staff:Array.isArray(obj.staff)?obj.staff:[],
+      driver:Array.isArray(obj.driver)?obj.driver:[]
+    };
+  }catch(e){ return null; }
+}
+
+async function saveSettingsToServer(value){
+  try{
+    const r=await fetch(SUPABASE_URL+"/rest/v1/pickup_memory?on_conflict=name",{
+      method:"POST",
+      headers:headers({Prefer:"resolution=merge-duplicates,return=minimal"}),
+      body:JSON.stringify({
+        name:WORK_SETTINGS_DB_NAME,
+        pickup:JSON.stringify({
+          staff:Array.isArray(value.staff)?value.staff:[],
+          driver:Array.isArray(value.driver)?value.driver:[]
+        }),
+        updated_at:new Date().toISOString()
+      })
+    });
+    if(!r.ok) throw new Error("HTTP "+r.status+"\\n"+await r.text());
+    showSettingMessage("✅ 共有サーバーに保存しました");
+  }catch(e){
+    console.error(e);
+    showSettingMessage("⚠️ PC内には保存しましたが、共有サーバーへの保存に失敗しました");
+  }
+}
+
+async function syncSettingsFromServer(){
+  if(settingsSyncing) return;
+  settingsSyncing=true;
+  try{
+    const shared=await getSharedSettings();
+    if(shared){
+      settings=shared;
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(settings));
+      renderSettings();
+      showSettingMessage("☁️ 共有設定を読み込みました");
+    }else{
+      await saveSettingsToServer(settings);
+      renderSettings();
+    }
+  }catch(e){
+    console.error(e);
+    showSettingMessage("⚠️ 共有設定を読み込めませんでした。PC内の設定を表示しています");
+  }finally{
+    settingsSyncing=false;
+  }
+}
+
+async function refreshSharedSettings(){
+  settingsSyncing=false;
+  await syncSettingsFromServer();
+}
+
+async function openSettings(){
+  document.getElementById("mainScreen").classList.add("hidden");
+  document.getElementById("settingsScreen").classList.remove("hidden");
+  renderSettings();
+  await syncSettingsFromServer();
+}
+
+function closeSettings(){
+  document.getElementById("settingsScreen").classList.add("hidden");
+  document.getElementById("mainScreen").classList.remove("hidden");
+}
+
+function renderSettings(){
+  renderPersonList("staff","staffList");
+  renderPersonList("driver","driverList");
+}
+
+function renderPersonList(type,id){
+  const el=document.getElementById(id);
+  const arr=settings[type]||[];
+  if(!arr.length){
+    el.innerHTML='<div class="empty">まだ登録されていません。</div>';
+    return;
+  }
+
+  el.innerHTML=arr.map((name,index)=>`
+    <div class="person-row"
+         draggable="true"
+         data-name="${escapeHtml(name)}"
+         data-type="${type}"
+         ondragstart="dragStart(event)"
+         ondragover="dragOver(event)"
+         ondragenter="dragEnter(event)"
+         ondragleave="dragLeave(event)"
+         ondrop="dropPerson(event)"
+         ondragend="dragEnd(event)">
+      <span class="drag-handle">☰</span>
+      <span class="person-name">${index+1}. ${escapeHtml(name)}</span>
+      <select onclick="event.stopPropagation()" onchange="changeType('${escapeJs(name)}',this.value)">
+        <option value="staff" ${type==="staff"?"selected":""}>スタッフ</option>
+        <option value="driver" ${type==="driver"?"selected":""}>ドライバー</option>
+      </select>
+      <button class="danger small" onclick="event.stopPropagation();deletePerson('${escapeJs(name)}')">削除</button>
+    </div>
+  `).join("");
+}
+
+let draggedPerson=null;
+
+function dragStart(event){
+  const row=event.currentTarget;
+  draggedPerson={
+    name:row.dataset.name,
+    type:row.dataset.type
+  };
+  row.classList.add("dragging");
+  event.dataTransfer.effectAllowed="move";
+  event.dataTransfer.setData("text/plain",row.dataset.name);
+}
+
+function dragOver(event){
+  event.preventDefault();
+  event.dataTransfer.dropEffect="move";
+}
+
+function dragEnter(event){
+  event.preventDefault();
+  const row=event.currentTarget;
+  if(!draggedPerson || row.dataset.type!==draggedPerson.type) return;
+  if(row.dataset.name!==draggedPerson.name) row.classList.add("drag-over");
+}
+
+function dragLeave(event){
+  event.currentTarget.classList.remove("drag-over");
+}
+
+function dropPerson(event){
+  event.preventDefault();
+  const target=event.currentTarget;
+  target.classList.remove("drag-over");
+
+  if(!draggedPerson) return;
+  if(target.dataset.type!==draggedPerson.type) return;
+  if(target.dataset.name===draggedPerson.name) return;
+
+  const type=draggedPerson.type;
+  const arr=settings[type]||[];
+  const from=arr.findIndex(x=>x===draggedPerson.name);
+  const to=arr.findIndex(x=>x===target.dataset.name);
+
+  if(from<0 || to<0) return;
+
+  const [moved]=arr.splice(from,1);
+  arr.splice(to,0,moved);
+
+  settings[type]=arr;
+  saveSettings();
+  renderSettings();
+  showSettingMessage("並び順を保存しました。");
+  draggedPerson=null;
+}
+
+function dragEnd(event){
+  event.currentTarget.classList.remove("dragging");
+  document.querySelectorAll(".person-row").forEach(row=>row.classList.remove("drag-over"));
+  draggedPerson=null;
+}
+
+function addPerson(type){
+  const input=document.getElementById(type==="staff"?"staffInput":"driverInput");
+  const name=input.value.trim();
+  if(!name) return;
+
+  if(settings.staff.includes(name) || settings.driver.includes(name)){
+    showSettingMessage("⚠️ その名前はすでに登録されています");
+    return;
+  }
+  settings[type].push(name);
+  input.value="";
+  saveSettings();
+  renderSettings();
+}
+
+function deletePerson(name){
+  settings.staff=settings.staff.filter(x=>x!==name);
+  settings.driver=settings.driver.filter(x=>x!==name);
+  saveSettings();
+  renderSettings();
+}
+
+function changeType(name,type){
+  settings.staff=settings.staff.filter(x=>x!==name);
+  settings.driver=settings.driver.filter(x=>x!==name);
+  settings[type].push(name);
+  saveSettings();
+  renderSettings();
+}
+
+function parseInput(text){
+  const lines=text.split(/\r?\n/);
+  const records=[];
+
+  for(const raw of lines){
+    const originalLine=String(raw).trim();
+    let line=originalLine;
+    if(!line) continue;
+    if(line.includes("★乗車前に道具確認★")) continue;
+
+    // 判定用だけ空白を整理。表示用の originalLine は変更しない。
+    line=line.replace(/\t/g," ").replace(/\s+/g," ").trim();
+
+    let m=line.match(/^(.+?)\s*(?:→|->|⇒|＞|：|:)\s*(.+)$/);
+    if(!m){
+      m=line.match(/^(.+?)\s+([0-9０-９]+(?:[.．][0-9０-９]+)?|休み|公休|休日)$/);
+    }
+    if(!m) continue;
+
+    const name=m[1].trim();
+    const timeText=m[2].trim();
+
+    if(!name || /^(名前|スタッフ|ドライバー)$/i.test(name)) continue;
+    const isOff=/^(休み|公休|休日|休)$/i.test(timeText);
+    const minutes=isOff ? null : parseTime(timeText);
+    if(!isOff && minutes===null) continue;
+
+    records.push({
+      name:name,
+      time:minutes,
+      originalTime:timeText,
+      raw:originalLine,
+      isOff:isOff
+    });
+  }
+  return records;
+}
+
+function parseTime(v){
+  v=String(v).trim().replace(/[０-９]/g,d=>String.fromCharCode(d.charCodeAt(0)-0xFEE0)).replace("．",".");
+  // 9.5 = 09:30 / 20.5 = 20:30
+  if(/^\d+(?:\.\d+)?$/.test(v)){
+    const n=Number(v);
+    const h=Math.floor(n);
+    const min=Math.round((n-h)*60);
+    if(h>=0 && h<=23 && min>=0 && min<60) return h*60+min;
+  }
+  const m=v.match(/^(\d{1,2})[:：](\d{1,2})$/);
+  if(m){
+    const h=Number(m[1]), min=Number(m[2]);
+    if(h>=0 && h<=23 && min>=0 && min<60) return h*60+min;
+  }
+  return null;
+}
+
+function fmtTime(minutes){
+  const h=Math.floor(minutes/60);
+  const m=minutes%60;
+  return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");
+}
+
+function normalizeName(name){
+  return name.replace(/\s+/g,"").trim();
+}
+
+function getType(name){
+  const n=normalizeName(name);
+  if(settings.staff.some(x=>normalizeName(x)===n)) return "staff";
+  if(settings.driver.some(x=>normalizeName(x)===n)) return "driver";
+  return null;
+}
+
+function generateList(){
+  const text=document.getElementById("inputData").value;
+  const records=parseInput(text);
+  const message=document.getElementById("message");
+  const resultCard=document.getElementById("resultCard");
+
+  message.innerHTML="";
+  resultCard.classList.add("hidden");
+
+  if(!text.trim()){
+    message.innerHTML='<div class="error">⚠️ Excelデータを貼り付けてください。</div>';
+    return;
+  }
+
+  if(!records.length){
+    message.innerHTML='<div class="error">⚠️ 読み取れる出勤データがありません。<br>「名前 → 時間」の形式を確認してください。</div>';
+    return;
+  }
+
+  const unknown=[];
+  const classified={staff:[],driver:[]};
+
+  for(const r of records){
+    const type=getType(r.name);
+    if(!type){
+      if(!unknown.some(x=>normalizeName(x)===normalizeName(r.name))) unknown.push(r.name);
+    }else{
+      classified[type].push(r);
+    }
+  }
+  const getOrder=(type,name)=>{
+    const arr=settings[type]||[];
+    const n=normalizeName(name);
+    const index=arr.findIndex(x=>normalizeName(x)===n);
+    return index<0 ? 999999 : index;
+  };
+
+  const sortRecords=(type,a,b)=>{
+    // 各分類ごとに「出勤する人」を時間順で先に並べ、
+    // その分類の「休みの人」を必ずその下にまとめて表示する。
+    if(a.isOff !== b.isOff) return a.isOff ? 1 : -1;
+    if(!a.isOff && !b.isOff && a.time!==b.time) return a.time-b.time;
+    return getOrder(type,a.name)-getOrder(type,b.name);
+  };
+
+  classified.staff.sort((a,b)=>sortRecords("staff",a,b));
+  classified.driver.sort((a,b)=>sortRecords("driver",a,b));
+
+  if(unknown.length){
+    message.innerHTML=
+      '<div class="error"><strong>⚠️ 未設定の名前があります</strong><br>'+
+      '下の名前を設定画面で「スタッフ」または「ドライバー」に登録してください。<br>'+
+      unknown.map(n=>'<span class="warning-name">'+escapeHtml(n)+'</span>').join("")+
+      '<div class="actions"><button class="primary small" onclick="openSettings()">⚙️ 設定画面を開く</button></div></div>';
+  }
+
+  // 完成一覧は「分類」と「並び替え」だけ。
+  // 元の入力行をそのまま表示する。
+  const staffOutput=classified.staff.map(r=>r.raw);
+  const driverOutput=classified.driver.map(r=>r.raw);
+
+  if(!staffOutput.length && !driverOutput.length){
+    if(unknown.length){
+      message.innerHTML += '<div class="notice">⚠️ まだ設定済みの名前がないため、完成一覧を作成できません。設定画面でスタッフ／ドライバーを登録してください。</div>';
+    }
+    return;
+  }
+
+  // 一覧の一番最初に固定文を入れる。
+  const headerLines=[
+    "ｽﾀｲﾘｯｼｭｱﾝの森(0794384119)",
+    "ｻﾑﾀｲﾑ(0794227346)",
+    "◆新規評価◆用ｱﾄﾞﾚｽ",
+    "nieyan19690316@gmail.com",
+    "",
+    "本日のﾄｲﾚ掃除→",
+    ""
+  ];
+
+  // スタッフとドライバーの間、そして一番下に確認文を入れる。
+  const marker="★乗車前に道具確認★";
+  const output=[...headerLines];
+  if(staffOutput.length) output.push(...staffOutput);
+  output.push(marker);
+  if(driverOutput.length) output.push(...driverOutput);
+  output.push(marker);
+  output.push("");
+  output.push("明日です。");
+  output.push("");
+
+  // 完成した一覧をこのPCのメモ帳へ自動貼り付け
+  const memoArea=document.getElementById("sharedMemo");
+  if(memoArea){
+    memoArea.value=output.join("\n");
+    saveLocalMemo();
+  }
+
+  let htmlOut="";
+  for(const line of output){
+    htmlOut += '<div class="result-row"><span>'+escapeHtml(line)+'</span></div>';
+  }
+
+  document.getElementById("workResult").innerHTML=htmlOut;
+  lastResultText=output.join("\n");
+  resultCard.classList.remove("hidden");
+
+  // 「② 一覧を作成」を押したら、完成した③へ自動移動
+  setTimeout(()=>{
+    resultCard.scrollIntoView({
+      behavior:"smooth",
+      block:"start"
+    });
+  },100);
+}
+
+function openSystemForAttendance(){
+  // メモ帳に保存されている内容を優先し、生成直後の一覧にも対応
+  const memoArea=document.getElementById("sharedMemo");
+  const text=(memoArea && memoArea.value.trim()) ? memoArea.value : lastResultText;
+  const message=document.getElementById("memoMessage");
+
+  if(!text || !text.trim()){
+    if(message) message.innerHTML='<div class="error">⚠️ 先に出勤一覧を作成するか、メモ帳に内容を入力してください。</div>';
+    return;
+  }
+
+  // システムを開く日付は、パソコンの今日から自動で1日先
+  const now=new Date();
+  now.setDate(now.getDate()+1);
+  const yyyy=now.getFullYear();
+  const mm=String(now.getMonth()+1).padStart(2,"0");
+  const dd=String(now.getDate()).padStart(2,"0");
+  const url=`http://coco.atcamel.jp/admin/order/person_sendmail_confirm.php?client_id=20&shop_id=26&member_id=&tel=&date=${yyyy}-${mm}-${dd}`;
+
+  // クリック直後に開き、ポップアップブロックを避ける
+  const newTab=window.open(url,"_blank");
+  if(!newTab && message){
+    message.innerHTML='<div class="error">⚠️ 新しいタブがブロックされた可能性があります。Edgeのポップアップ許可を確認してください。</div>';
+  }
+
+  const showSuccess=()=>{
+    if(message) message.innerHTML='<div class="notice">🚀 システムを開きました。メモ帳の内容をコピー済みです。システム側の「🤖 出勤一覧を反映」を押してください。</div>';
+  };
+  const copyFallback=()=>{
+    const t=document.createElement("textarea");
+    t.value=text;
+    document.body.appendChild(t);
+    t.select();
+    try { document.execCommand("copy"); } catch(e) {}
+    t.remove();
+    showSuccess();
+  };
+
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(showSuccess).catch(copyFallback);
+  } else {
+    copyFallback();
+  }
+}
+
+function copyWorkResultForSystem(){
+  if(!lastResultText){
+    document.getElementById("copyMessage").innerHTML='<div class="error">⚠️ 先に「② 一覧を作成」を押してください。</div>';
+    return;
+  }
+
+  const done=()=>{
+    document.getElementById("copyMessage").innerHTML='<div class="notice">📋 完成一覧をコピーしました。対象システムを開いて「🤖 出勤一覧を反映」を押してください。</div>';
+  };
+
+  navigator.clipboard.writeText(lastResultText).then(done).catch(()=>{
+    const t=document.createElement("textarea");
+    t.value=lastResultText;
+    document.body.appendChild(t);
+    t.select();
+    document.execCommand("copy");
+    t.remove();
+    done();
+  });
+}
+
+function pasteResultToMemo(){
+  if(!lastResultText){
+    document.getElementById("copyMessage").innerHTML='<div class="error">⚠️ 貼り付ける完成一覧がありません。</div>';
+    return;
+  }
+
+  const memoArea=document.getElementById("sharedMemo");
+  if(!memoArea) return;
+
+  memoArea.value=lastResultText;
+  saveLocalMemo();
+  showTab("memo");
+
+  setTimeout(()=>{
+    memoArea.focus();
+    memoArea.scrollIntoView({behavior:"smooth",block:"start"});
+  },100);
+}
+
+function clearInput(){
+  document.getElementById("inputData").value="";
+  document.getElementById("message").innerHTML="";
+  document.getElementById("resultCard").classList.add("hidden");
+  lastResultText="";
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function escapeJs(s){
+  return String(s).replace(/\\/g,"\\\\").replace(/'/g,"\\'");
+}
+
+// Enterで追加
+document.getElementById("staffInput").addEventListener("keydown",e=>{if(e.key==="Enter")addPerson("staff")});
+document.getElementById("driverInput").addEventListener("keydown",e=>{if(e.key==="Enter")addPerson("driver")});
+
+
+(function(){
+  const saved=localStorage.getItem("unifiedActiveTab");
+  showTab(saved==="work"||saved==="memo"?saved:"pickup");
+})();
+</script>
+</body>
+</html>
