@@ -226,7 +226,7 @@ select{padding:7px;border:1px solid #ccc;border-radius:7px;background:#fff}
         <button class="primary" onclick="openSystemForAttendance()">🚀 CAMELに貼付け</button>
         <button type="button" class="danger" onclick="clearSharedMemo()">🗑️ クリア</button>
       </div>
-      <div class="notice">💡 システムを開いた後、システム側に表示される「🤖 出勤一覧を反映」ボタンを押すと、メモ帳の出勤一覧を貼り付けて、該当する出勤者を自動チェックできます。</div>
+      <div class="notice">💡 操作方法<br>「CAMELに貼付け」ボタンを押し、CAMELが開いたら内容を確認し「OK」ボタンを押してください。メモ帳の一覧が貼り付けられ、該当する出勤者に自動でチェックが入ります。</div>
       <div id="memoMessage"></div>
     </div>
   </div>
@@ -1219,7 +1219,9 @@ function openSystemForAttendance(){
   const yyyy=now.getFullYear();
   const mm=String(now.getMonth()+1).padStart(2,"0");
   const dd=String(now.getDate()).padStart(2,"0");
-  const url=`http://coco.atcamel.jp/admin/order/person_sendmail_confirm.php?client_id=20&shop_id=26&member_id=&tel=&date=${yyyy}-${mm}-${dd}`;
+  const baseUrl=`http://coco.atcamel.jp/admin/order/person_sendmail_confirm.php?client_id=20&shop_id=26&member_id=&tel=&date=${yyyy}-${mm}-${dd}`;
+  // Tampermonkey側が読み取れるよう、メモ帳の全文をURLフラグメントで渡す
+  const url=baseUrl+"#memo="+encodeURIComponent(text);
 
   // クリック直後に開き、ポップアップブロックを避ける
   const newTab=window.open(url,"_blank");
@@ -1228,7 +1230,7 @@ function openSystemForAttendance(){
   }
 
   const showSuccess=()=>{
-    if(message) message.innerHTML='<div class="notice">🚀 システムを開きました。メモ帳の内容をコピー済みです。システム側の「🤖 出勤一覧を反映」を押してください。</div>';
+    if(message) message.innerHTML='<div class="notice">🚀 CAMELを開きました。メモ帳の内容はコピー済みです。CAMELの画面を確認してください。</div>';
   };
   const copyFallback=()=>{
     const t=document.createElement("textarea");
